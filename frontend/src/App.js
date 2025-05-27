@@ -1,76 +1,63 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom"; // CHANGE !!
+import Home from "./components/Home"; // CHANGE !!
+import Login from "./components/Login"; // CHANGE !!
+import Register from "./components/Register"; // CHANGE !!
+import Library from "./components/Library"; // CHANGE !!
+import BookReviews from "./components/BookReviews"; // CHANGE !!
 import "./App.css";
 
 function App() {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState({ tfidf: [], bert: [] });
-  const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState(localStorage.getItem("userEmail") || ""); // CHANGE !!
 
-  const searchBooks = async () => {
-    if (!query.trim()) return;
-    setLoading(true);
-    try {
-      const res = await axios.get("http://localhost:8000/recommend", {
-        params: { query, n: 5 },
-      });
-      setResults({
-        tfidf: res.data.tfidf_recommendations,
-        bert: res.data.bert_recommendations,
-      });
-    } catch (err) {
-      console.error("API hatası:", err);
-    }
-    setLoading(false);
+  const handleLogout = () => { // CHANGE !!
+    setUserEmail("");
+    localStorage.removeItem("userEmail");
   };
 
   return (
-    <div className="container">
-      <header className="header">
-        <h1 className="logo">BookBuddy 🎯</h1>
-        <div className="search">
-          <input
-            type="text"
-            placeholder="Kitap ismi gir..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+    <Router> {/* CHANGE !! */}
+      <div className="container">
+        <header className="header">
+          <h1 className="logo">BookBuddy 🎯</h1>
+          <nav className="nav"> {/* CHANGE !! */}
+            <Link to="/">Home</Link>
+            {userEmail ? (
+              <>
+                <Link to="/library">My Library</Link>
+                <span>Welcome, {userEmail}</span>
+                <button onClick={handleLogout}>Logout</button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">Login</Link>
+                <Link to="/register">Register</Link>
+              </>
+            )}
+          </nav>
+        </header>
+
+        <Routes> {/* CHANGE !! */}
+          <Route path="/" element={<Home userEmail={userEmail} />} />
+          <Route
+            path="/login"
+            element={userEmail ? <Navigate to="/" /> : <Login setUserEmail={setUserEmail} />}
           />
-          <button onClick={searchBooks}>Ara</button>
-        </div>
-      </header>
-
-      {loading && <p className="loading">Yükleniyor...</p>}
-
-      {!loading && (
-        <main className="results">
-          <section>
-            <h2>BERT Önerileri</h2>
-            <div className="cards">
-              {results.bert.map((book, idx) => (
-                <div className="card" key={`bert-${idx}`}>
-                  <h3>{book["Book-Title"]}</h3>
-                  <p><strong>Yazar:</strong> {book["Book-Author"]}</p>
-                  <p><strong>Benzerlik:</strong> {book["Similarity"].toFixed(3)}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h2>TF-IDF Önerileri</h2>
-            <div className="cards">
-              {results.tfidf.map((book, idx) => (
-                <div className="card" key={`tfidf-${idx}`}>
-                  <h3>{book["Book-Title"]}</h3>
-                  <p><strong>Yazar:</strong> {book["Book-Author"]}</p>
-                  <p><strong>Benzerlik:</strong> {book["Similarity"].toFixed(3)}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </main>
-      )}
-    </div>
+          <Route
+            path="/register"
+            element={userEmail ? <Navigate to="/" /> : <Register />}
+          />
+          <Route
+            path="/library"
+            element={userEmail ? <Library userEmail={userEmail} /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/book/reviews"
+            element={<BookReviews userEmail={userEmail} />}
+          />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
